@@ -1,0 +1,231 @@
+{
+  "title": "Calçados Padilha — Visão Geral",
+  "uid": "calcados-padilha-overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "tags": ["calcados-padilha"],
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "Saúde dos Serviços",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Serviços Ativos",
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 1 },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none", "textMode": "auto" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{ "type": "value", "options": { "1": { "text": "UP", "color": "green" }, "0": { "text": "DOWN", "color": "red" } } }],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        }
+      },
+      "targets": [
+        { "datasource": "Prometheus", "expr": "up", "legendFormat": "{{job}}", "refId": "A" }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Requisições por Serviço (req/s)",
+      "gridPos": { "h": 8, "w": 16, "x": 8, "y": 1 },
+      "fieldConfig": { "defaults": { "unit": "reqps", "color": { "mode": "palette-classic" } } },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "targets": [
+        { "datasource": "Prometheus", "expr": "sum by (service) (rate(http_requests_total[1m]))", "legendFormat": "{{service}}", "refId": "A" }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Taxa de Erro (5xx) — últimos 5m",
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 5 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 0.01 }, { "color": "red", "value": 0.05 }] }
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "area" },
+      "targets": [
+        { "datasource": "Prometheus", "expr": "sum(rate(http_requests_total{status_code=~\"5..\"}[5m])) / sum(rate(http_requests_total[5m]))", "legendFormat": "Erro %", "refId": "A" }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "row",
+      "title": "Latência HTTP",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
+      "collapsed": false
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Latência p50 / p95 / p99 (producao-service)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 10 },
+      "fieldConfig": { "defaults": { "unit": "s", "color": { "mode": "palette-classic" } } },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "targets": [
+        { "datasource": "Prometheus", "expr": "histogram_quantile(0.50, sum by (le) (rate(http_request_duration_seconds_bucket{service=\"producao-service\"}[5m])))", "legendFormat": "p50", "refId": "A" },
+        { "datasource": "Prometheus", "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{service=\"producao-service\"}[5m])))", "legendFormat": "p95", "refId": "B" },
+        { "datasource": "Prometheus", "expr": "histogram_quantile(0.99, sum by (le) (rate(http_request_duration_seconds_bucket{service=\"producao-service\"}[5m])))", "legendFormat": "p99", "refId": "C" }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Latência p50 / p95 / p99 (empresas-service)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 10 },
+      "fieldConfig": { "defaults": { "unit": "s", "color": { "mode": "palette-classic" } } },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "targets": [
+        { "datasource": "Prometheus", "expr": "histogram_quantile(0.50, sum by (le) (rate(http_request_duration_seconds_bucket{service=\"empresas-service\"}[5m])))", "legendFormat": "p50", "refId": "A" },
+        { "datasource": "Prometheus", "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{service=\"empresas-service\"}[5m])))", "legendFormat": "p95", "refId": "B" },
+        { "datasource": "Prometheus", "expr": "histogram_quantile(0.99, sum by (le) (rate(http_request_duration_seconds_bucket{service=\"empresas-service\"}[5m])))", "legendFormat": "p99", "refId": "C" }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "row",
+      "title": "Negócio — Ordens de Serviço",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 18 },
+      "collapsed": false
+    },
+    {
+      "id": 9,
+      "type": "piechart",
+      "title": "Ordens por Status",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 19 },
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" } } },
+      "options": { "pieType": "donut", "legend": { "displayMode": "table", "placement": "right", "values": ["value", "percent"] } },
+      "targets": [
+        { "datasource": "Prometheus", "expr": "ordens_por_status", "legendFormat": "{{status}}", "refId": "A", "instant": true }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "barchart",
+      "title": "Lotes por Etapa de Fabricação",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 19 },
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" } } },
+      "options": { "orientation": "vertical", "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" }, "xTickLabelRotation": -20 },
+      "targets": [
+        { "datasource": "Prometheus", "expr": "lotes_por_etapa", "legendFormat": "{{etapa}}", "refId": "A", "instant": true }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Eventos de Domínio — Taxa (eventos/s)",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 19 },
+      "fieldConfig": { "defaults": { "unit": "ops", "color": { "mode": "palette-classic" } } },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "targets": [
+        { "datasource": "Prometheus", "expr": "rate(domain_events_total[5m])", "legendFormat": "{{event_type}}", "refId": "A" }
+      ]
+    },
+    {
+      "id": 12,
+      "type": "row",
+      "title": "Eventos no Event Store (acumulado)",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 27 },
+      "collapsed": false
+    },
+    {
+      "id": 13,
+      "type": "bargauge",
+      "title": "Total de Eventos por Tipo",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 28 },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        }
+      },
+      "options": { "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"] }, "displayMode": "gradient", "valueMode": "color" },
+      "targets": [
+        { "datasource": "Prometheus", "expr": "eventos_no_store", "legendFormat": "{{event_type}}", "refId": "A", "instant": true }
+      ]
+    },
+    {
+      "id": 14,
+      "type": "timeseries",
+      "title": "Commands Executados por Status",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 28 },
+      "fieldConfig": { "defaults": { "unit": "ops", "color": { "mode": "palette-classic" } } },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "targets": [
+        { "datasource": "Prometheus", "expr": "rate(commands_total[5m])", "legendFormat": "{{command}} / {{status}}", "refId": "A" }
+      ]
+    },
+    {
+      "id": 15,
+      "type": "row",
+      "title": "Runtime Node.js",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 36 },
+      "collapsed": false
+    },
+    {
+      "id": 16,
+      "type": "timeseries",
+      "title": "Heap Usado por Serviço",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 37 },
+      "fieldConfig": { "defaults": { "unit": "bytes", "color": { "mode": "palette-classic" } } },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "targets": [
+        { "datasource": "Prometheus", "expr": "nodejs_heap_size_used_bytes", "legendFormat": "{{service}}", "refId": "A" }
+      ]
+    },
+    {
+      "id": 17,
+      "type": "timeseries",
+      "title": "Event Loop Lag por Serviço",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 37 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": { "mode": "palette-classic" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 0.1 }, { "color": "red", "value": 0.5 }] }
+        }
+      },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "targets": [
+        { "datasource": "Prometheus", "expr": "nodejs_eventloop_lag_seconds", "legendFormat": "{{service}}", "refId": "A" }
+      ]
+    },
+    {
+      "id": 18,
+      "type": "row",
+      "title": "Logs (Loki)",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 45 },
+      "collapsed": false
+    },
+    {
+      "id": 19,
+      "type": "logs",
+      "title": "Logs de Erro — Todos os Serviços",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 46 },
+      "options": { "dedupStrategy": "none", "showLabels": true, "showTime": true, "sortOrder": "Descending", "wrapLogMessage": true },
+      "targets": [
+        { "datasource": "Loki", "expr": "{service=~\"producao-service|empresas-service|api-gateway\"} |= \"error\" | json | level = \"error\"", "legendFormat": "", "refId": "A" }
+      ]
+    },
+    {
+      "id": 20,
+      "type": "logs",
+      "title": "Logs Recentes — Todos os Serviços",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 56 },
+      "options": { "dedupStrategy": "none", "showLabels": true, "showTime": true, "sortOrder": "Descending", "wrapLogMessage": true },
+      "targets": [
+        { "datasource": "Loki", "expr": "{service=~\"producao-service|empresas-service|api-gateway\"}", "legendFormat": "", "refId": "A" }
+      ]
+    }
+  ]
+}

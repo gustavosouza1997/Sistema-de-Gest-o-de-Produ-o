@@ -1,0 +1,245 @@
+services:
+  # ─── Bancos de dados ────────────────────────────────────────────────
+  postgres-empresas:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: empresas_db
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin}
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_empresas_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-admin} -d empresas_db']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-producao:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: producao_db
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin}
+    ports:
+      - '5433:5432'
+    volumes:
+      - postgres_producao_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-admin} -d producao_db']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-authentik:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: authentik
+      POSTGRES_USER: authentik
+      POSTGRES_PASSWORD: ${AUTHENTIK_DB_PASSWORD:-authentik}
+    volumes:
+      - postgres_authentik_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U authentik -d authentik']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Message Broker ─────────────────────────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-admin}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-admin}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', 'check_port_connectivity']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Authentik (IdP) ────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+
+  authentik-server:
+    image: ghcr.io/goauthentik/server:2024.10
+    command: server
+    environment:
+      AUTHENTIK_REDIS__HOST: redis
+      AUTHENTIK_POSTGRESQL__HOST: postgres-authentik
+      AUTHENTIK_POSTGRESQL__USER: authentik
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_DB_PASSWORD:-authentik}
+      AUTHENTIK_POSTGRESQL__NAME: authentik
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:-altere-esta-chave-em-producao}
+      AUTHENTIK_BOOTSTRAP_PASSWORD: ${AUTHENTIK_BOOTSTRAP_PASSWORD:-Admin1234!}
+      AUTHENTIK_BOOTSTRAP_TOKEN: ${AUTHENTIK_BOOTSTRAP_TOKEN:-bootstrap-token-dev}
+    ports:
+      - '9000:9000'
+    depends_on:
+      postgres-authentik:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    healthcheck:
+      test: ['CMD-SHELL', 'ak healthcheck || exit 1']
+      start_period: 60s
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  authentik-worker:
+    image: ghcr.io/goauthentik/server:2024.10
+    command: worker
+    environment:
+      AUTHENTIK_REDIS__HOST: redis
+      AUTHENTIK_POSTGRESQL__HOST: postgres-authentik
+      AUTHENTIK_POSTGRESQL__USER: authentik
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_DB_PASSWORD:-authentik}
+      AUTHENTIK_POSTGRESQL__NAME: authentik
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:-altere-esta-chave-em-producao}
+      AUTHENTIK_BOOTSTRAP_PASSWORD: ${AUTHENTIK_BOOTSTRAP_PASSWORD:-Admin1234!}
+      AUTHENTIK_BOOTSTRAP_TOKEN: ${AUTHENTIK_BOOTSTRAP_TOKEN:-bootstrap-token-dev}
+    depends_on:
+      - authentik-server
+
+  # ─── Microserviços ──────────────────────────────────────────────────
+  empresas-service:
+    build:
+      context: ./empresas-service
+      dockerfile: Dockerfile
+    ports:
+      - '3002:3000'
+    environment:
+      NODE_ENV: production
+      TYPEORM_SYNC: 'true'
+      PORT: 3000
+      DATABASE_HOST: postgres-empresas
+      DATABASE_PORT: 5432
+      DATABASE_NAME: empresas_db
+      DATABASE_USER: ${POSTGRES_USER:-admin}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-admin}
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin}@rabbitmq:5672
+      AUTHENTIK_JWKS_URL: http://authentik-server:9000/application/o/calcados-padilha/jwks/
+      AUTHENTIK_ISSUER: http://localhost:9000/application/o/calcados-padilha/
+    depends_on:
+      postgres-empresas:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  producao-service:
+    build:
+      context: ./producao-service
+      dockerfile: Dockerfile
+    ports:
+      - '3001:3000'
+    environment:
+      NODE_ENV: production
+      TYPEORM_SYNC: 'true'
+      PORT: 3000
+      DATABASE_HOST: postgres-producao
+      DATABASE_PORT: 5432
+      DATABASE_NAME: producao_db
+      DATABASE_USER: ${POSTGRES_USER:-admin}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-admin}
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin}@rabbitmq:5672
+      AUTHENTIK_JWKS_URL: http://authentik-server:9000/application/o/calcados-padilha/jwks/
+      AUTHENTIK_ISSUER: http://localhost:9000/application/o/calcados-padilha/
+    depends_on:
+      postgres-producao:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    ports:
+      - '3000:3000'
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      EMPRESAS_SERVICE_URL: http://empresas-service:3000
+      PRODUCAO_SERVICE_URL: http://producao-service:3000
+      AUTHENTIK_JWKS_URL: http://authentik-server:9000/application/o/calcados-padilha/jwks/
+      AUTHENTIK_ISSUER: http://localhost:9000/application/o/calcados-padilha/
+      AUTHENTIK_URL: http://authentik-server:9000
+      AUTHENTIK_CLIENT_ID: calcados-padilha
+      FRONTEND_URL: http://localhost:5173/
+    depends_on:
+      - empresas-service
+      - producao-service
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - '5173:80'
+    environment:
+      VITE_API_URL: http://localhost:3000
+      VITE_AUTHENTIK_URL: http://localhost:9000
+      VITE_AUTHENTIK_CLIENT_ID: ${AUTHENTIK_CLIENT_ID:-calcados-padilha}
+
+  # ─── Observabilidade ────────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    ports:
+      - '9090:9090'
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+
+  loki:
+    image: grafana/loki:3.0.0
+    ports:
+      - '3100:3100'
+    volumes:
+      - ./infra/loki/loki-config.yml:/etc/loki/config.yml
+      - loki_data:/loki
+    command: -config.file=/etc/loki/config.yml
+
+  promtail:
+    image: grafana/promtail:3.0.0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./infra/promtail/promtail-config.yml:/etc/promtail/config.yml
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    ports:
+      - '3003:3000'
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: 'true'
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: 'false'
+    volumes:
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+      - loki
+
+volumes:
+  postgres_empresas_data:
+  postgres_producao_data:
+  postgres_authentik_data:
+  rabbitmq_data:
+  redis_data:
+  loki_data:
+  grafana_data:

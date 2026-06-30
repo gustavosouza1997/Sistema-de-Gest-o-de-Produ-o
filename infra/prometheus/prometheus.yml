@@ -1,0 +1,23 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'empresas-service'
+    static_configs:
+      - targets: ['empresas-service:3000']
+    metrics_path: '/metrics'
+
+  - job_name: 'producao-service'
+    static_configs:
+      - targets: ['producao-service:3000']
+    metrics_path: '/metrics'
+
+  - job_name: 'api-gateway'
+    static_configs:
+      - targets: ['api-gateway:3000']
+    metrics_path: '/metrics'
+
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
