@@ -83,6 +83,8 @@ services:
       AUTHENTIK_BOOTSTRAP_TOKEN: ${AUTHENTIK_BOOTSTRAP_TOKEN:-bootstrap-token-dev}
     ports:
       - '9000:9000'
+    volumes:
+      - ./infra/authentik/blueprints:/blueprints/custom
     depends_on:
       postgres-authentik:
         condition: service_healthy
@@ -107,6 +109,8 @@ services:
       AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:-altere-esta-chave-em-producao}
       AUTHENTIK_BOOTSTRAP_PASSWORD: ${AUTHENTIK_BOOTSTRAP_PASSWORD:-Admin1234!}
       AUTHENTIK_BOOTSTRAP_TOKEN: ${AUTHENTIK_BOOTSTRAP_TOKEN:-bootstrap-token-dev}
+    volumes:
+      - ./infra/authentik/blueprints:/blueprints/custom
     depends_on:
       - authentik-server
 
@@ -170,11 +174,11 @@ services:
       PORT: 3000
       EMPRESAS_SERVICE_URL: http://empresas-service:3000
       PRODUCAO_SERVICE_URL: http://producao-service:3000
-      AUTHENTIK_JWKS_URL: http://authentik-server:9000/application/o/calcados-padilha/jwks/
-      AUTHENTIK_ISSUER: http://localhost:9000/application/o/calcados-padilha/
       AUTHENTIK_URL: http://authentik-server:9000
       AUTHENTIK_CLIENT_ID: calcados-padilha
+      AUTHENTIK_BOOTSTRAP_TOKEN: ${AUTHENTIK_BOOTSTRAP_TOKEN:-bootstrap-token-dev}
       FRONTEND_URL: http://localhost:5173/
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-mude-em-producao-obrigatorio-32x}
     depends_on:
       - empresas-service
       - producao-service

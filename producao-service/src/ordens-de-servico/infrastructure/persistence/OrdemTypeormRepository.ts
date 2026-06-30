@@ -40,7 +40,7 @@ export class OrdemTypeormRepository implements OrdemRepository {
           id: l.id,
           remessaId: r.id,
           identificador: l.identificador,
-          codigoBarras: l.codigoBarras ?? null,
+          codigoBarras: l.codigoBarras || null,
           modeloId: l.modeloId,
           quantidade: l.quantidade,
           etapa: l.etapa,

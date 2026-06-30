@@ -50,10 +50,10 @@ const modeloSchema = z.object({
   empresaId:               z.string().min(1, 'Obrigatório'),
   sigla:                   z.string().min(1, 'Obrigatório'),
   linha:                   z.string().min(1, 'Obrigatório'),
-  preco:                   z.string().min(1, 'Obrigatório').transform(Number),
-  producaoPorDia:          z.string().min(1, 'Obrigatório').transform(Number),
-  turno:                   z.string().min(1, 'Obrigatório').transform(Number),
-  custoPorMinutoPrevisto:  z.string().min(1, 'Obrigatório').transform(Number),
+  preco:                   z.string().min(1, 'Obrigatório'),
+  producaoPorDia:          z.string().min(1, 'Obrigatório'),
+  turno:                   z.string().min(1, 'Obrigatório'),
+  custoPorMinutoPrevisto:  z.string().min(1, 'Obrigatório'),
 });
 
 const editSchema = z.object({
@@ -284,8 +284,16 @@ function CriarModeloModal({ isOpen, onClose, empresas, onSuccess }: {
     resolver: zodResolver(modeloSchema),
   });
 
+  const toNum = (v: string) => Number(v.replace(',', '.'));
+
   const mutation = useMutation({
-    mutationFn: (data: ModeloForm) => api.post<string>('/api/producao/modelos', data),
+    mutationFn: (data: ModeloForm) => api.post<string>('/api/producao/modelos', {
+      ...data,
+      preco:                  toNum(data.preco),
+      producaoPorDia:         toNum(data.producaoPorDia),
+      turno:                  toNum(data.turno),
+      custoPorMinutoPrevisto: toNum(data.custoPorMinutoPrevisto),
+    }),
     onSuccess: (res) => {
       const id = String(res.data).replace(/"/g, '');
       reset();
@@ -343,14 +351,16 @@ function EditarModeloModal({ isOpen, onClose, modelo, onSuccess }: {
     },
   });
 
+  const toNum = (v: string) => Number(v.replace(',', '.'));
+
   const mutation = useMutation({
     mutationFn: (data: EditForm) => api.patch(`/api/producao/modelos/${modelo.id}`, {
       sigla:                  data.sigla,
       linha:                  data.linha,
-      preco:                  Number(data.preco),
-      producaoPorDia:         Number(data.producaoPorDia),
-      turno:                  Number(data.turno),
-      custoPorMinutoPrevisto: Number(data.custoPorMinutoPrevisto),
+      preco:                  toNum(data.preco),
+      producaoPorDia:         toNum(data.producaoPorDia),
+      turno:                  toNum(data.turno),
+      custoPorMinutoPrevisto: toNum(data.custoPorMinutoPrevisto),
     }),
     onSuccess: () => { onSuccess(); onClose(); },
   });

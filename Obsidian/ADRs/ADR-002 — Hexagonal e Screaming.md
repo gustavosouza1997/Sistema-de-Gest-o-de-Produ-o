@@ -13,11 +13,11 @@ Com CQRS e Event Sourcing, o domínio precisa ser testável de forma isolada, se
 
 ## Alternativas consideradas
 
-| Alternativa | Descrição | Motivo de rejeição |
-|-------------|-----------|-------------------|
-| **Layered (MVC)** | controllers/ services/ repositories/ | Domínio depende do ORM; pastas gritam tecnologia, não negócio |
-| **Hexagonal** ✅ | Ports no domínio, Adapters na infraestrutura | — |
-| **Clean Architecture** | Similar ao hexagonal, com Use Cases explícitos e mais camadas | Overhead de abstração para o tamanho atual do time |
+| Alternativa            | Descrição                                                     | Motivo de rejeição                                            |
+| ---------------------- | ------------------------------------------------------------- | ------------------------------------------------------------- |
+| **Layered (MVC)**      | controllers/ services/ repositories/                          | Domínio depende do ORM; pastas gritam tecnologia, não negócio |
+| **Hexagonal** ✅        | Ports no domínio, Adapters na infraestrutura                  | —                                                             |
+| **Clean Architecture** | Similar ao hexagonal, com Use Cases explícitos e mais camadas | Overhead de abstração para o tamanho atual do time            |
 
 ---
 

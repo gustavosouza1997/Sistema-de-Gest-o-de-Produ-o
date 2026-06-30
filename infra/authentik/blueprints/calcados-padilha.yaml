@@ -1,0 +1,91 @@
+version: 1
+metadata:
+  name: Calçados Padilha
+  labels:
+    blueprints.goauthentik.io/description: "Flow ROPC, provider OAuth2 e aplicação para o sistema"
+
+entries:
+  # ── Stages ──────────────────────────────────────────────────────────────
+  - id: ropc-id-stage
+    model: authentik_stages_identification.identificationstage
+    state: present
+    identifiers:
+      name: ropc-identification-stage
+    attrs:
+      user_fields:
+        - username
+        - email
+      case_insensitive_matching: true
+      show_matched_user: true
+      sources: []
+      show_source_labels: false
+
+  - id: ropc-pass-stage
+    model: authentik_stages_password.passwordstage
+    state: present
+    identifiers:
+      name: ropc-password-stage
+    attrs:
+      backends:
+        - authentik.core.auth.InbuiltBackend
+      failed_attempts_before_cancel: 5
+
+  # ── Flow de autenticação ROPC ────────────────────────────────────────────
+  - id: ropc-flow
+    model: authentik_flows.flow
+    state: present
+    identifiers:
+      slug: ropc-authentication-flow
+    attrs:
+      name: ROPC Authentication Flow
+      title: Login
+      designation: authentication
+      layout: stacked
+      authentication: none
+      denied_action: message_continue
+
+  - model: authentik_flows.flowstagebinding
+    state: present
+    identifiers:
+      target: !KeyOf ropc-flow
+      stage: !KeyOf ropc-id-stage
+      order: 10
+    attrs:
+      enabled: true
+
+  - model: authentik_flows.flowstagebinding
+    state: present
+    identifiers:
+      target: !KeyOf ropc-flow
+      stage: !KeyOf ropc-pass-stage
+      order: 20
+    attrs:
+      enabled: true
+
+  # ── OAuth2 Provider ──────────────────────────────────────────────────────
+  - id: calcados-provider
+    model: authentik_providers_oauth2.oauth2provider
+    state: present
+    identifiers:
+      name: Calcados Padilha
+    attrs:
+      client_type: public
+      client_id: calcados-padilha
+      redirect_uris:
+        - matching_mode: strict
+          url: "http://localhost:5173/"
+      authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
+      invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+      sub_mode: hashed_user_id
+      include_claims_in_id_token: true
+
+  # ── Aplicação ────────────────────────────────────────────────────────────
+  - model: authentik_core.application
+    state: present
+    identifiers:
+      slug: calcados-padilha
+    attrs:
+      name: "Calçados Padilha"
+      provider: !KeyOf calcados-provider
+      meta_launch_url: "http://localhost:5173/"
+      meta_description: "Sistema de Gestão de Produção"
