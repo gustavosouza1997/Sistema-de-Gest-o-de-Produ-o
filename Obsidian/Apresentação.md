@@ -83,6 +83,30 @@ Os 11 eventos de domínio: `OrdemCriada`, `OrdemAberta`, `OrdemEmExecucao`, `Ord
 
 ---
 
+## Posicionamento por Perfil de Arquiteto
+
+Como a mesma arquitetura é vista por diferentes perfis de arquiteto:
+
+### Arquiteto de Software
+**Foco:** estrutura interna do código, padrões, coesão, acoplamento, testabilidade.
+**Pergunta-guia:** "Como o código está organizado por dentro?"
+
+**Resposta:** O código é organizado por **domínio**, não por camada técnica (Screaming Architecture), com separação clara entre `domain/`, `application/` e `infrastructure/` (Arquitetura Hexagonal — ports e adapters). O CQRS separa commands e queries em handlers dedicados, reduzindo acoplamento entre escrita e leitura. Os agregados (ex: `OrdemDeServico`) concentram as regras de negócio e são reconstruídos por Event Sourcing, o que garante alta coesão (estado e comportamento no mesmo lugar) e testabilidade (handlers e agregados são testáveis isoladamente, sem depender de infraestrutura).
+
+### Arquiteto de Solução
+**Foco:** integração entre serviços, comunicação, infraestrutura, viabilidade técnica.
+**Pergunta-guia:** "Como os componentes conversam entre si?"
+
+**Resposta:** O sistema é dividido em 3 microsserviços (`api-gateway`, `producao-service`, `empresas-service`), cada um com seu próprio banco PostgreSQL — nenhum serviço acessa o banco do outro. O `api-gateway` valida o JWT emitido pelo Authentik (OIDC) antes de rotear as requisições. A comunicação entre serviços ocorre via HTTP/RabbitMQ, e toda a infraestrutura (serviços, bancos, observabilidade) é orquestrada via Docker Compose, o que viabiliza deploy e escalonamento independentes de cada serviço.
+
+### Arquiteto Enterprise
+**Foco:** alinhamento com o negócio, custo, escalabilidade estratégica, risco, governança.
+**Pergunta-guia:** "Por que essa arquitetura faz sentido para a empresa?"
+
+**Resposta:** O Event Sourcing garante auditoria completa — toda ação fica registrada com quem fez, quando e o que mudou, atendendo a requisitos de rastreabilidade do negócio (importante no controle de produção física via código de barras). Os microsserviços permitem escalar apenas o serviço que sofre mais carga (ex: `producao-service` no chão de fábrica), otimizando custo de infraestrutura. As ADRs documentam as decisões técnicas com justificativa, dando governança e histórico de risco para decisões futuras. O uso de Authentik (IdP self-hosted) e da stack PLG (Prometheus, Loki, Grafana) reduz dependência de fornecedores externos e custo de licenciamento, além de mitigar risco operacional com observabilidade centralizada.
+
+---
+
 ## Tecnologias Utilizadas
 
 ### Backend
@@ -91,7 +115,6 @@ Os 11 eventos de domínio: `OrdemCriada`, `OrdemAberta`, `OrdemEmExecucao`, `Ord
 | Framework       | **NestJS** (TypeScript)                |
 | ORM             | **TypeORM** + PostgreSQL               |
 | CQRS            | `@nestjs/cqrs` (CommandBus + QueryBus) |
-| Logging         | **Pino** (JSON estruturado)            |
 | Package manager | **pnpm** (monorepo workspaces)         |
 | Autenticação    | **Authentik** (IdP OIDC self-hosted)   |
 | Containers      | **Docker Compose**                     |

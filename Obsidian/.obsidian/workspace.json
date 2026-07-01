@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "ADRs/ADR-001 — Microserviços.md",
+                "file": "Apresentação.md",
                 "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "ADR-001 — Microserviços"
+              "title": "Apresentação"
             }
           }
         ]
@@ -182,25 +182,33 @@
   },
   "active": "c4780c69cc8351ce",
   "lastOpenFiles": [
+    "Módulos/Modelos.md",
+    "Apresentação.md.tmp.59620.709de53a20df",
+    "Módulos/Controle de Produção.md",
     "API.md",
     "Apresentação.md",
+    "Observabilidade.md",
+    "Tech Stack.md",
+    "Hexagonal e Screaming.md",
+    "Decisões Técnicas.md",
+    "Arquitetura.md",
+    "ADRs/ADR-004 — TypeScript TypeORM PostgreSQL.md",
+    "ADRs/ADR-003 — CQRS e Event Sourcing.md",
+    "ADRs/ADR-002 — Hexagonal e Screaming.md",
+    "ADRs/ADR-001 — Microserviços.md",
+    "Apresentacao - Solucao Arquitetural.pptx",
+    "ADRs/ADR-006 — PLG Stack.md",
+    "ADRs/ADR-005 — shadcn-ui.md",
+    "ADRs/ADR-009 — RabbitMQ vs Kafka.md",
     "Home.md",
     "ADRs/ADR-007 — Authentik como IdP.md",
-    "ADRs/ADR-001 — Microserviços.md",
     "ADRs/ADR-010 — UUID vs ID Sequencial.md",
-    "ADRs/ADR-009 — RabbitMQ vs Kafka.md",
-    "ADRs/ADR-002 — Hexagonal e Screaming.md",
-    "ADRs/ADR-006 — PLG Stack.md",
-    "Módulos/Modelos.md",
-    "Módulos/Controle de Produção.md",
     "Entidades/Processos.md",
     "Entidades/Modelos de Calçados.md",
     "Entidades/Empresas.md",
     "ADRs/ADR-008 — NestJS vs Fastify.md",
-    "Decisões Técnicas.md",
     "CQRS e Event Sourcing.md",
     "Banco de Dados.md",
-    "Arquitetura.md",
     "Módulos/Controle de Produção.md.tmp.4591.6151c54cdd64"
   ]
 }
